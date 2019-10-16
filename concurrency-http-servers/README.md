@@ -28,7 +28,7 @@ x: 1
 ```
 The requests manipulate a shared `CounterStore` which is essentially a simple `map`.
 
-Simulate many concurrent connections with ApacheBench:
+Simulate many concurrent connections with `ApacheBench`:
 
 ```sh
 $ ab -n 20000 -c 200 "127.0.0.1:8000/inc?name=i"
@@ -42,7 +42,7 @@ Test aborted after 10 failures
 apr_socket_connect(): Connection reset by peer (104)
 Total of 4622 requests completed
 ```
-We can see that the tests are failing.
+We can see that the tests fail.
 
 Server logs:
 
@@ -65,7 +65,7 @@ The error is `fatal error: concurrent map writes`
 
 The request handlers can run concurrently but they all manipulate a shared `CounterStore`.
 
-For example, the inc handler is being called concurrently for multiple requests and attempts to mutate the map.
+For example, the `inc` handler is being called concurrently for multiple requests and attempts to mutate the map in the `CounterStore`.
 
 This leads to a race condition since in Go, map operations are not atomic.
 https://golang.org/doc/faq#atomic_maps
