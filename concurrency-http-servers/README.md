@@ -1,5 +1,7 @@
 # Concurrency in Go HTTP Servers 
 
+These tests are inspired by the blog https://eli.thegreenplace.net/
+
 ## Part 1/3 : 1_concurrent-maps 
 
 ```sh
