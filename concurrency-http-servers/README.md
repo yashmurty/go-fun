@@ -8,7 +8,7 @@ cd 1_concurrent-maps
 
 ### HTTP Server
 
-Start the server:
+**Start the server**:
 ```sh
 go run main.go
 ```
@@ -28,7 +28,7 @@ x: 1
 ```
 The requests manipulate a shared `CounterStore` which is essentially a simple `map`.
 
-Simulate many concurrent connections with `ApacheBench`:
+**Simulate many concurrent connections with `ApacheBench`**:
 
 ```sh
 $ ab -n 20000 -c 200 "127.0.0.1:8000/inc?name=i"
@@ -44,7 +44,7 @@ Total of 4622 requests completed
 ```
 We can see that the tests fail.
 
-Server logs:
+**Server logs from our Go HTTP Server**:
 
 ```sh
 2019/10/16 17:57:11 inc &{GET /inc?name=i HTTP/1.0 1 0 map[Accept:[*/*] User-Agent:[ApacheBench/2.3]] {} <nil> 0 [] true 127.0.0.1:8000 map[] map[] <nil> map[] 127.0.0.1:45452 /inc?name=i <nil> <nil> <nil> 0xc000142640}
@@ -61,11 +61,10 @@ main.CounterStore.inc(0xc000094ba0, 0x74a300, 0xc0004948c0, 0xc0002e8100)
 
 ```
 
-The error is `fatal error: concurrent map writes`
+The error that caused the failure is:    
+`fatal error: concurrent map writes`
 
-The request handlers can run concurrently but they all manipulate a shared `CounterStore`.
-
-For example, the `inc` handler is being called concurrently for multiple requests and attempts to mutate the map in the `CounterStore`.
-
+The request handlers can run concurrently but they all manipulate a shared `CounterStore`.    
+For example, the `inc` handler is being called concurrently for multiple requests and attempts to mutate the `map` in the `CounterStore`.    
 This leads to a race condition since in Go, map operations are not atomic.
 https://golang.org/doc/faq#atomic_maps
