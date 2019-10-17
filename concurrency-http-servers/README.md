@@ -80,3 +80,20 @@ We add the following 2 changes:
 * We embed a `sync.Mutex` in `CounterStore`, and each handler starts by locking the mutex (and deferring an unlock).
 * We change the receiver `inc` is defined on to a pointer `*CounterStore`. In fact, the previous version of the code was wrong in this respect - methods that modify data should always be defined with pointer receivers. We got lucky that the data was shared at all with value receivers because maps are reference types. Pointer receivers are particularly critical when mutexes are involved.
 
+## PART 3/3 : 3_channel-commands
+
+Instead of mutexes, we could use channels to synchronize access to shared data.
+We start by defining a "counter manager" which is a background goroutine with access to a closure that stores the actual data.
+
+Instead of accessing the map of counters directly, handlers will send `Commands` on a channel and will receive replies on a reply channel they provide.
+
+The shared object for the handlers will now be a Server.
+```sh
+type Server struct {
+  cmds chan<- Command
+}
+```
+
+Each handler deals with the manager synchronously; the `Command` send is blocking, and so is the read from the reply channel. But note - not a mutex in sight! Mutual exclusion is accomplished by a single goroutine having access to the actual data.
+
+While it certainly looks like an interesting technique, for our particular use case this approach seems like an overkill. In fact, overuse of channels is one of the common gotchas for Go beginners. 
