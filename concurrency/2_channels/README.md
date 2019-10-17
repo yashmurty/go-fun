@@ -2,6 +2,8 @@
 
 ### 2_channels
 
+**Channels**
+
 Inspired from A Tour of Go: https://tour.golang.org/concurrency/2
 
 Channels are a typed conduit through which you can send and receive values with the channel operator, `<-`.
