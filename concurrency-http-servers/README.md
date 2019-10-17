@@ -70,3 +70,13 @@ The request handlers can run concurrently but they all manipulate a shared `Coun
 For example, the `inc` handler is being called concurrently for multiple requests and attempts to mutate the `map` in the `CounterStore`.    
 This leads to a race condition since in Go, map operations are not atomic.
 https://golang.org/doc/faq#atomic_maps
+
+## PART 2/3 : 2_mutex-maps
+
+To fix the race condition, we will add a `mutex`.
+
+We add the following 2 changes:
+
+* We embed a `sync.Mutex` in `CounterStore`, and each handler starts by locking the mutex (and deferring an unlock).
+* We change the receiver `inc` is defined on to a pointer `*CounterStore`. In fact, the previous version of the code was wrong in this respect - methods that modify data should always be defined with pointer receivers. We got lucky that the data was shared at all with value receivers because maps are reference types. Pointer receivers are particularly critical when mutexes are involved.
+
