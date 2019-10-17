@@ -1,7 +1,5 @@
 # Concurrency in Go HTTP Servers 
 
-These tests are inspired by the blog https://eli.thegreenplace.net/
-
 ## Part 1/3 : 1_concurrent-maps 
 
 ```sh
@@ -97,3 +95,5 @@ type Server struct {
 Each handler deals with the manager synchronously; the `Command` send is blocking, and so is the read from the reply channel. But note - not a mutex in sight! Mutual exclusion is accomplished by a single goroutine having access to the actual data.
 
 While it certainly looks like an interesting technique, for our particular use case this approach seems like an overkill. In fact, overuse of channels is one of the common gotchas for Go beginners. 
+
+These tests are taken from: https://eli.thegreenplace.net/2019/on-concurrency-in-go-http-servers/
