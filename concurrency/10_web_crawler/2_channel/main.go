@@ -12,27 +12,41 @@ type Fetcher interface {
 
 // Crawl uses fetcher to recursively crawl
 // pages starting with url, to a maximum of depth.
-func Crawl(url string, depth int, fetcher Fetcher) {
+func Crawl(url string, depth int, fetcher Fetcher, done chan bool) {
 	// TODO: Fetch URLs in parallel.
 	// TODO: Don't fetch the same URL twice.
 	// This implementation doesn't do either:
 	if depth <= 0 {
+		done <- true
 		return
 	}
 	body, urls, err := fetcher.Fetch(url)
 	if err != nil {
 		fmt.Println(err)
+		done <- true
 		return
 	}
 	fmt.Printf("found: %s %q\n", url, body)
+
+	// Wait for the children crawls.
+	childrenDone := make(chan bool, 1)
 	for _, u := range urls {
-		Crawl(u, depth-1, fetcher)
+		go Crawl(u, depth-1, fetcher, childrenDone)
 	}
+	for i := 0; i < len(urls); i++ {
+		<-childrenDone
+	}
+
+	// Mark the the crawl function as finished.
+	done <- true
 	return
 }
 
 func main() {
-	Crawl("https://golang.org/", 4, fetcher)
+	done := make(chan bool)
+	go Crawl("https://golang.org/", 4, fetcher, done)
+	<-done
+	return
 }
 
 // fakeFetcher is Fetcher that returns canned results.
