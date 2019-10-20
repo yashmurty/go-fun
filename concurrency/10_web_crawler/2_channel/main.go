@@ -2,7 +2,73 @@ package main
 
 import (
 	"fmt"
+	"log"
 )
+
+type CommandType int
+
+const (
+	GetCommand = iota
+	SetCommand
+	IncCommand
+)
+
+type Command struct {
+	ty        CommandType
+	url       string
+	replyChan chan bool
+}
+
+// startURLManager starts a goroutine that serves as a manager for our
+// counters datastore. Returns a channel that's used to send commands to the
+// manager.
+func startURLManager(initvals map[string]bool) chan<- Command {
+	urlMap := make(map[string]bool)
+	for k, v := range initvals {
+		urlMap[k] = v
+	}
+
+	cmds := make(chan Command)
+
+	go func() {
+		for cmd := range cmds {
+			switch cmd.ty {
+			case GetCommand:
+				if val, ok := urlMap[cmd.url]; ok {
+					cmd.replyChan <- val
+				} else {
+					cmd.replyChan <- false
+				}
+			case SetCommand:
+				urlMap[cmd.url] = true
+				cmd.replyChan <- true
+			default:
+				log.Fatal("unknown command type", cmd.ty)
+			}
+		}
+	}()
+	return cmds
+}
+
+var urlManager = startURLManager(map[string]bool{})
+
+// crawledStatus checks if a URL has already been crawled or not.
+func crawledStatus(url string) bool {
+
+	replyChan := make(chan bool)
+	urlManager <- Command{ty: GetCommand, url: url, replyChan: replyChan}
+	reply := <-replyChan
+
+	// If url already exists, return true.
+	if reply == true {
+		return true
+	}
+	// Else, set the crawl status to true but return false for existing status.
+	urlManager <- Command{ty: SetCommand, url: url, replyChan: replyChan}
+	_ = <-replyChan
+
+	return false
+}
 
 type Fetcher interface {
 	// Fetch returns the body of URL and
@@ -20,6 +86,12 @@ func Crawl(url string, depth int, fetcher Fetcher, done chan bool) {
 		done <- true
 		return
 	}
+	// Don't fetch the same URL twice.
+	if crawledStatus(url) {
+		done <- true
+		return
+	}
+
 	body, urls, err := fetcher.Fetch(url)
 	if err != nil {
 		fmt.Println(err)
