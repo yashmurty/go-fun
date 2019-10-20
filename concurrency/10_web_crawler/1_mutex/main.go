@@ -56,6 +56,7 @@ func Crawl(url string, depth int, fetcher Fetcher) {
 	}
 	fmt.Printf("found: %s %q\n", url, body)
 	for _, u := range urls {
+		// Fetch URLs in parallel.
 		urlStore.wg.Add(1)
 		go Crawl(u, depth-1, fetcher)
 	}
