@@ -82,20 +82,23 @@ func Crawl(url string, depth int, fetcher Fetcher, done chan bool) {
 	// TODO: Fetch URLs in parallel.
 	// TODO: Don't fetch the same URL twice.
 	// This implementation doesn't do either:
+
+	// Report to caller that we're finished.
+	if done != nil {
+		defer func() { done <- true }()
+	}
+
 	if depth <= 0 {
-		done <- true
 		return
 	}
 	// Don't fetch the same URL twice.
 	if crawledStatus(url) {
-		done <- true
 		return
 	}
 
 	body, urls, err := fetcher.Fetch(url)
 	if err != nil {
 		fmt.Println(err)
-		done <- true
 		return
 	}
 	fmt.Printf("found: %s %q\n", url, body)
@@ -109,8 +112,6 @@ func Crawl(url string, depth int, fetcher Fetcher, done chan bool) {
 		<-childrenDone
 	}
 
-	// Mark the the crawl function as finished.
-	done <- true
 	return
 }
 
