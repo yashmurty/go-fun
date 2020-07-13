@@ -48,8 +48,9 @@ func main() {
 		go insertValueInDB(i, db, &wg)
 	}
 
+	fmt.Println("WaitGroup is waiting for the goroutines to finish")
 	wg.Wait()
-
+	fmt.Println("-- END - WaitGroup has finished blocking")
 }
 
 // insertValueInDB performs a db.Query insert.
