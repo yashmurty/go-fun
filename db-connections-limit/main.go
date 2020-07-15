@@ -15,6 +15,16 @@ import (
 // Launch several goroutines and INSERT into DB for each goroutine concurrently.
 // Make these goroutine sleep for a second, to keep the connection open,
 // since the close() will be deferred.
+
+type counterStore struct {
+	sync.Mutex
+	errorCounter int
+}
+
+// Set the maximum number of go routines that we wish to run concurrently.
+const MAXGOROUTINES = 50
+const SLEEP_SECONDS = 5
+
 func main() {
 	fmt.Println("Go - MySQL Connection Limitation test")
 
@@ -25,6 +35,7 @@ func main() {
 	fmt.Println("sqlURL : ", sqlURL)
 	db, err := sql.Open("mysql", sqlURL)
 
+	// Maximum number of open connections to the database;
 	// db.SetMaxOpenConns(10)
 
 	if err != nil {
@@ -34,28 +45,34 @@ func main() {
 	// defer the close till after the main function has finished executing
 	defer db.Close()
 
-	// Set the maximum number of go routines that we wish to run concurrently.
-	var MAXGOROUTINES = 20
-
 	// To wait for multiple goroutines to finish, we can use a wait group.
 	var wg sync.WaitGroup
+
+	store := counterStore{errorCounter: 0}
 
 	for i := 0; i < MAXGOROUTINES; i++ {
 
 		wg.Add(1)
 
 		// Launch several goroutines and INSERT into DB for each goroutine concurrently.
-		go insertValueInDB(i, db, &wg)
+		go insertValueInDB(i, db, &wg, &store)
 	}
 
 	fmt.Println("WaitGroup is waiting for the goroutines to finish")
+
 	wg.Wait()
+
 	fmt.Println("-- END - WaitGroup has finished blocking")
+	// No need to lock here IMO, but still adding it for now.
+	store.Lock()
+	fmt.Println("-- Total errorCount: ", store.errorCounter)
+	store.Unlock()
+
 }
 
 // insertValueInDB performs a db.Query insert.
 // It opens up a new DB connection to do so. http://go-database-sql.org/connection-pool.html
-func insertValueInDB(i int, db *sql.DB, wg *sync.WaitGroup) {
+func insertValueInDB(i int, db *sql.DB, wg *sync.WaitGroup, cs *counterStore) {
 	defer wg.Done()
 
 	fmt.Println("--- iteration count : ", i)
@@ -63,15 +80,25 @@ func insertValueInDB(i int, db *sql.DB, wg *sync.WaitGroup) {
 	insert, err := db.Query("INSERT INTO test_table VALUES ( ?, 'TEST' )", i)
 
 	if err != nil {
-		panic(err.Error())
+		cs.Lock()
+		cs.errorCounter++
+		fmt.Println("------ errorCounter : ", cs.errorCounter)
+		cs.Unlock()
+
+		fmt.Println("------ ERROR : ", err.Error())
+
+		// panic(err.Error())
+		// Return to skip further logic in the function.
+		return
 	}
 
 	defer insert.Close()
 	fmt.Println("insert : ", insert)
+	fmt.Println("db.OpenConnections : ", db.Stats().OpenConnections)
 
 	// Make this goroutine sleep for a second, to keep the connection open,
 	// since the close() will be deferred.
-	time.Sleep(2 * time.Second)
+	time.Sleep(SLEEP_SECONDS * time.Second)
 }
 
 // RequireEnv looks up an environment variable and panics if
