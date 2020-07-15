@@ -59,16 +59,19 @@ mysql> show status where `variable_name` = 'Threads_connected';
 1 row in set (0.21 sec)
 ```
 
+As expected, it matches the `max_connections` parameter value of 45.
+
 Out of these 45, 5 are the same as stated above. So the remaining 40 belong to our program which tried to establish 50 concurrent connections.
 This shows that 10 must have failed to connect.
+
 We can confirm this by checking our console output, where we see logs like:
 
 ```sh
 ERROR :  Error 1040: Too many connections
 ...
-Total errorCount:  10
+Total errorCount:  10 # This is a total count of how many goroutines i.e. our concurrent connection requests failed.
 ```
 
-> One easy way to avoid running into such limitations would be to set the `db.SetMaxOpenConns(N)` value, where N could be 40 to stay under the max limit of 45. This will make sure that other concurrent requests don't open any connection when already 40 are open, and they wait for connections to become available again.
+> One easy way to avoid running into such limitations in `go` would be to set the `db.SetMaxOpenConns(N)` value, where N could be 40 to stay under the max limit of 45. This will make sure that other concurrent requests don't open any connection when already 40 are open, and they wait for connections to become available again.
 
 ### AWS RDS Proxy (for db.t2.small instance)
