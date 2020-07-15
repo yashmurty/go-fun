@@ -1,4 +1,4 @@
-## Check connections limitation on RDS DBs.
+## Check connections limitation on RDS Databases.
 
 Simulate simultaneous MySQL Connections & test its limitation.
 
@@ -44,7 +44,7 @@ mysql> show status where `variable_name` = 'Threads_connected';
 1 row in set (0.20 sec)
 ```
 
-Out of these 5 connections, 4 belong to system process by AWS RDS. 1 belongs to our MySQL Client that we are using to monitor these stats ourselves.
+Out of these 5 connections, 4 belong to system process by AWS RDS (this number can vary at times). 1 belongs to our MySQL Client that we are using to monitor these stats ourselves.
 
 When we run the program with 50 concurrent connection requests, the stats are:
 
