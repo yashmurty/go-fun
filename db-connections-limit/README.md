@@ -23,3 +23,52 @@ go run main.go
 ```
 
 **Note:** Go mod will automatically install missing dependencies.
+
+## Connections Limit - Test Results
+
+### AWS RDS Aurora (db.t2.small instance)
+
+This instance type has default value for `max_connections` parameter set as 45.
+https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraMySQL.Managing.Performance.html
+
+Before performing the limits test, the status is:
+
+```sh
+# This is equivalent to the DatabaseConnections metric.
+mysql> show status where `variable_name` = 'Threads_connected';
++-------------------+-------+
+| Variable_name     | Value |
++-------------------+-------+
+| Threads_connected | 5     |
++-------------------+-------+
+1 row in set (0.20 sec)
+```
+
+Out of these 5 connections, 4 belong to system process by AWS RDS. 1 belongs to our MySQL Client that we are using to monitor these stats ourselves.
+
+When we run the program with 50 concurrent connection requests, the stats are:
+
+```sh
+# This is equivalent to the DatabaseConnections metric.
+mysql> show status where `variable_name` = 'Threads_connected';
++-------------------+-------+
+| Variable_name     | Value |
++-------------------+-------+
+| Threads_connected | 45    |
++-------------------+-------+
+1 row in set (0.21 sec)
+```
+
+Out of these 45, 5 are the same as stated above. So the remaining 40 belong to our program which tried to establish 50 concurrent connections.
+This shows that 10 must have failed to connect.
+We can confirm this by checking our console output, where we see logs like:
+
+```sh
+ERROR :  Error 1040: Too many connections
+...
+Total errorCount:  10
+```
+
+> One easy way to avoid running into such limitations would be to set the `db.SetMaxOpenConns(N)` value, where N could be 40 to stay under the max limit of 45. This will make sure that other concurrent requests don't open any connection when already 40 are open, and they wait for connections to become available again.
+
+### AWS RDS Proxy (for db.t2.small instance)
