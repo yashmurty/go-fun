@@ -23,7 +23,7 @@ type counterStore struct {
 
 // Set the maximum number of go routines that we wish to run concurrently.
 const MAXGOROUTINES = 50
-const SLEEP_SECONDS = 5
+const SLEEP_SECONDS = 30
 
 func main() {
 	fmt.Println("Go - MySQL Connection Limitation test")
