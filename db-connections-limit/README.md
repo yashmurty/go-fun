@@ -3,7 +3,9 @@
 Simulate simultaneous MySQL Connections & test its limitation.
 
 - Write program that opens multiple connections on MySQL Database.
+- Keep the connections open instead of closing them after the query.
 - Confirm on Database side whether it shows multiple connections are open.
+- Check how many such multiple connections are possible to be kept open.
 
 ### Connection Pool in Go
 
@@ -68,8 +70,9 @@ We can confirm this by checking our console output, where we see logs like:
 
 ```sh
 # Output logs from our go program.
-ERROR :  Error 1040: Too many connections
 db.OpenConnections :  40
+
+ERROR :  Error 1040: Too many connections
 ...
 Total errorCount:  10 # This is a total count of how many goroutines i.e. our concurrent connection requests failed.
 ```
@@ -125,3 +128,78 @@ As we can see, the `RDS Proxy` flawlessly handled the connection pooling and we 
 Please note that we were able to request a higher number of concurrent connection requests than the permissible `max_connections` value of 45. This is because under the hood `RDS Proxy` will automatically queue any requests higher than the max limit and wait for connections to be free again before resolving it.
 
 When we run the program with 100 concurrent connection requests, the stats are:
+
+Same as above for the DatabaseConnections metric, i.e. Threads_connected = 45.
+
+When we see our programs output logs we see that:
+
+```sh
+# Output logs from our go program.
+db.OpenConnections :  100
+...
+Total errorCount:  0 # This is a total count of how many goroutines i.e. our concurrent connection requests failed.
+```
+
+When we run the program with 1000 concurrent connection requests, the stats are:
+
+Same as above for the DatabaseConnections metric, i.e. Threads_connected = 45.
+
+When we see our programs output logs we see that:
+
+```sh
+# Output logs from our go program.
+db.OpenConnections :  1000
+
+ERROR :  Error 9501: Timed-out waiting to acquire database connection
+...
+Total errorCount:  818 # This is a total count of how many goroutines i.e. our concurrent connection requests failed.
+```
+
+If we look up this error code in AWS, it states the cause to be:
+```
+ERROR 9501 (HY000): Timed-out waiting to acquire database connection
+-
+The proxy timed-out waiting to acquire a database connection. Some possible reasons include the following:
+- The proxy is unable to establish a database connection because the maximum connections have been reached
+- The proxy is unable to establish a database connection because the database is unavailable.
+```
+
+Does this imply that for our `db.t2.small instance` which has a set value of `max_connections` to be 45, can have it's RDS Proxy handle a maximum of around `~180 (~4 times the max_connections value)` concurrent connection requests?
+
+Funnily, when we run the program with 200 concurrent connection requests, the stats are:
+
+```sh
+# Output logs from our go program.
+db.OpenConnections :  200
+
+ERROR :  Error 9501: Timed-out waiting to acquire database connection
+...
+Total errorCount:  54 # This is a total count of how many goroutines i.e. our concurrent connection requests failed.
+```
+
+This means that this time `~146` connections were successful.
+
+In either cases, we were able to achieve successful request results from RDS Proxy at much higher scale than directly connecting to the database instance.
+
+Another important note that can be added is, currently in the above test scenarios, we keep the connection open for a long time (kept open for 30 seconds).
+If we change it to shorter durations, say 3 seconds, we note the results to be:
+
+For the case of 200 concurrent requests:
+```sh
+# Output logs from our go program.
+db.OpenConnections :  200
+
+Total errorCount:  0 # This is a total count of how many goroutines i.e. our concurrent connection requests failed.
+```
+
+For the case of 1000 concurrent requests:
+```sh
+# Output logs from our go program.
+db.OpenConnections :  1000
+
+Total errorCount:  0 # This is a total count of how many goroutines i.e. our concurrent connection requests failed.
+```
+
+We see that both the tests ran successfully! RDS Proxy was able to manage this huge number of concurrent requests even for a database with such a minimal spec (db.t2.small = 1 vCPU, 2 GB Mem). Had we run the same test directly against the database, we would have immediately run into the error: `Error 1040: Too many connections`.
+
+Another point to note is, it would be a great idea to use RDS Proxy when serving serverless programs, since they tend to frequently open and close database connections. RDS Proxy would take away connection management from the database and do it by itself, hence wasting less memory resources of the database.
