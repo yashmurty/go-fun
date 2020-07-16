@@ -98,7 +98,7 @@ mysql> show status where `variable_name` = 'Threads_connected';
 
 Out of these 5 connections, 4 belong to system process by AWS RDS (this number can vary at times). 1 belongs to our MySQL Client that we are using to monitor these stats ourselves. 2 new connections belong to `rdsproxyadmin`.
 
-When we run the program with 50 concurrent connection requests, the stats are:
+**When we run the program with 50 concurrent connection requests, the stats are:**
 
 ```sh
 # This is equivalent to the DatabaseConnections metric.
@@ -140,7 +140,7 @@ db.OpenConnections :  100
 Total errorCount:  0 # This is a total count of how many goroutines i.e. our concurrent connection requests failed.
 ```
 
-When we run the program with 1000 concurrent connection requests, the stats are:
+**When we run the program with 1000 concurrent connection requests, the stats are:**
 
 Same as above for the DatabaseConnections metric, i.e. Threads_connected = 45.
 
@@ -166,7 +166,7 @@ The proxy timed-out waiting to acquire a database connection. Some possible reas
 
 Does this imply that for our `db.t2.small instance` which has a set value of `max_connections` to be 45, can have it's RDS Proxy handle a maximum of around `~180 (~4 times the max_connections value)` concurrent connection requests?
 
-Funnily, when we run the program with 200 concurrent connection requests, the stats are:
+**Funnily, when we run the program with 200 concurrent connection requests, the stats are:**
 
 ```sh
 # Output logs from our go program.
@@ -184,7 +184,7 @@ In either cases, we were able to achieve successful request results from RDS Pro
 Another important note that can be added is, currently in the above test scenarios, we keep the connection open for a long time (kept open for 30 seconds).
 If we change it to shorter durations, say 3 seconds, we note the results to be:
 
-For the case of 200 concurrent requests:
+**For the case of 200 concurrent requests:**
 ```sh
 # Output logs from our go program.
 db.OpenConnections :  200
@@ -192,7 +192,7 @@ db.OpenConnections :  200
 Total errorCount:  0 # This is a total count of how many goroutines i.e. our concurrent connection requests failed.
 ```
 
-For the case of 1000 concurrent requests:
+**For the case of 1000 concurrent requests:**
 ```sh
 # Output logs from our go program.
 db.OpenConnections :  1000
