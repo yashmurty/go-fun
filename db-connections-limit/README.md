@@ -48,7 +48,7 @@ mysql> show status where `variable_name` = 'Threads_connected';
 
 Out of these 5 connections, 4 belong to system process by AWS RDS (this number can vary at times). 1 belongs to our MySQL Client that we are using to monitor these stats ourselves.
 
-When we run the program with 50 concurrent connection requests, the stats are:
+**When we run the program with 50 concurrent connection requests, the stats are:**
 
 ```sh
 # This is equivalent to the DatabaseConnections metric.
@@ -127,7 +127,7 @@ Total errorCount:  0 # This is a total count of how many goroutines i.e. our con
 As we can see, the `RDS Proxy` flawlessly handled the connection pooling and we did not run into the `too many open connections` issue like earlier. 
 Please note that we were able to request a higher number of concurrent connection requests than the permissible `max_connections` value of 45. This is because under the hood `RDS Proxy` will automatically queue any requests higher than the max limit and wait for connections to be free again before resolving it.
 
-When we run the program with 100 concurrent connection requests, the stats are:
+**When we run the program with 100 concurrent connection requests, the stats are:**
 
 Same as above for the DatabaseConnections metric, i.e. Threads_connected = 45.
 
