@@ -10,12 +10,14 @@ Simulate simultaneous MySQL Connections & test its limitation.
 ### Connection Pool in Go
 
 To understand how it works under the hood, refer to these links:
+
 - http://go-database-sql.org/accessing.html
 - http://go-database-sql.org/connection-pool.html
 
 ### Run the program
 
 **Start the program**:
+
 ```sh
 # Load the env variables.
 bash load_env.sh
@@ -124,7 +126,7 @@ db.OpenConnections :  50
 Total errorCount:  0 # This is a total count of how many goroutines i.e. our concurrent connection requests failed.
 ```
 
-As we can see, the `RDS Proxy` flawlessly handled the connection pooling and we did not run into the `too many open connections` issue like earlier. 
+As we can see, the `RDS Proxy` flawlessly handled the connection pooling and we did not run into the `too many open connections` issue like earlier.
 Please note that we were able to request a higher number of concurrent connection requests than the permissible `max_connections` value of 45. This is because under the hood `RDS Proxy` will automatically queue any requests higher than the max limit and wait for connections to be free again before resolving it.
 
 **When we run the program with 100 concurrent connection requests, the stats are:**
@@ -156,6 +158,7 @@ Total errorCount:  818 # This is a total count of how many goroutines i.e. our c
 ```
 
 If we look up this error code in AWS, it states the cause to be:
+
 ```
 ERROR 9501 (HY000): Timed-out waiting to acquire database connection
 -
@@ -185,6 +188,7 @@ Another important note that can be added is, currently in the above test scenari
 If we change it to shorter durations, say 3 seconds, we note the results to be:
 
 **For the case of 200 concurrent requests:**
+
 ```sh
 # Output logs from our go program.
 db.OpenConnections :  200
@@ -193,6 +197,7 @@ Total errorCount:  0 # This is a total count of how many goroutines i.e. our con
 ```
 
 **For the case of 1000 concurrent requests:**
+
 ```sh
 # Output logs from our go program.
 db.OpenConnections :  1000
@@ -203,3 +208,15 @@ Total errorCount:  0 # This is a total count of how many goroutines i.e. our con
 We see that both the tests ran successfully! RDS Proxy was able to manage this huge number of concurrent requests even for a database with such a minimal spec (db.t2.small = 1 vCPU, 2 GB Mem). Had we run the same test directly against the database, we would have immediately run into the error: `Error 1040: Too many connections`.
 
 Another point to note is, it would be a great idea to use RDS Proxy when serving serverless programs, since they tend to frequently open and close database connections. RDS Proxy would take away connection management from the database and do it by itself, hence wasting less memory resources of the database.
+
+### Result Summary
+
+| DB Type    | DB Info    | Concurrent requests | Connection Open time | Error Count | Error Message                                                |
+| ---------- | ---------- | ------------------- | -------------------- | ----------- | ------------------------------------------------------------ |
+| RDS Aurora | max_con=45 | 50                  | 30 seconds           | 10          | Error 1040: Too many connections                             |
+| RDS Proxy  | max_con=45 | 50                  | 30 seconds           | 0           | -                                                            |
+| RDS Proxy  | max_con=45 | 100                 | 30 seconds           | 0           | -                                                            |
+| RDS Proxy  | max_con=45 | 200                 | 30 seconds           | 54          | Error 9501: Timed-out waiting to acquire database connection |
+| RDS Proxy  | max_con=45 | 1000                | 30 seconds           | 818         | Error 9501: Timed-out waiting to acquire database connection |
+| RDS Proxy  | max_con=45 | 200                 | 3 seconds            | 0           | -                                                            |
+| RDS Proxy  | max_con=45 | 1000                | 3 seconds            | 0           | -                                                            |
