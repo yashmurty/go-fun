@@ -207,8 +207,6 @@ Total errorCount:  0 # This is a total count of how many goroutines i.e. our con
 
 We see that both the tests ran successfully! RDS Proxy was able to manage this huge number of concurrent requests even for a database with such a minimal spec (db.t2.small = 1 vCPU, 2 GB Mem). Had we run the same test directly against the database, we would have immediately run into the error: `Error 1040: Too many connections`.
 
-Another point to note is, it would be a great idea to use RDS Proxy when serving serverless programs, since they tend to frequently open and close database connections. RDS Proxy would take away connection management from the database and do it by itself, hence wasting less memory resources of the database.
-
 ### Result Summary
 
 | DB Type    | DB Info    | Concurrent requests | Connection Open time | Error Count | Error Message                                                |
@@ -220,3 +218,18 @@ Another point to note is, it would be a great idea to use RDS Proxy when serving
 | RDS Proxy  | max_con=45 | 1000                | 30 seconds           | 818         | Error 9501: Timed-out waiting to acquire database connection |
 | RDS Proxy  | max_con=45 | 200                 | 3 seconds            | 0           | -                                                            |
 | RDS Proxy  | max_con=45 | 1000                | 3 seconds            | 0           | -                                                            |
+
+### Conclusion
+
+It is clear that if we use RDS Proxy, we can handle requests up to `~3 to 4 times more` of what we would have by directly connecting to the database instance.
+
+The benefit that we identified here was the connection pooling offered by RDS Proxy. While it can be noted that `golang` for instance has it's own built-in mechanism for handling connection pooling efficiently, but in my view it may not work as intended when there are multiple instances of our backend running on different machines. We would then have to manually divide our `max_connections` by total backend instances that are running and set this value in `db.SetMaxOpenConns(N)` so that we can avoid creating too many connections across all the separate instances.
+
+### Conclusion for Serverless Environment
+
+Let us also take the case of **serverless environment**.
+
+Here the instances spin up and die down quite frequently. So even a single running instance might lose it's stateful information (like connection state) quite quickly. This would lead to frequent open and close connection requests.
+Unlike the above proposal, we may no longer be able to manually determine the `SetMaxOpenConns(N)` since any number of serverless instances could spin up depending on the load.
+
+In such a scenario, the only solution in our view would be to rely on `RDS Proxy` to take care of connection pooling efficiently. The database would no longer experience frequently opening and closing connections hence wasting less of it's memory on connection management. At the same time, as we noted in these test results, `RDS Proxy` can handle connection requests greater than that available under the `max_connections` limit.
