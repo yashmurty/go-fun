@@ -19,11 +19,12 @@ import (
 type counterStore struct {
 	sync.Mutex
 	errorCounter int
+	errorMessage string
 }
 
 // Set the maximum number of go routines that we wish to run concurrently.
-const MAXGOROUTINES = 50
-const SLEEP_SECONDS = 30
+const MAXGOROUTINES = 161
+const SLEEP_SECONDS = 5
 
 func main() {
 	fmt.Println("Go - MySQL Connection Limitation test")
@@ -48,7 +49,7 @@ func main() {
 	// To wait for multiple goroutines to finish, we can use a wait group.
 	var wg sync.WaitGroup
 
-	store := counterStore{errorCounter: 0}
+	store := counterStore{errorCounter: 0, errorMessage: ""}
 
 	for i := 0; i < MAXGOROUTINES; i++ {
 
@@ -63,9 +64,21 @@ func main() {
 	wg.Wait()
 
 	fmt.Println("-- END - WaitGroup has finished blocking")
+	// RESULT:
+	fmt.Println("\n---------------- RESULT ----------------")
+	fmt.Println("Total concurrent connections request: ", MAXGOROUTINES)
+	fmt.Println("Connection idle time (in seconds): ", SLEEP_SECONDS)
+
 	// No need to lock here IMO, but still adding it for now.
 	store.Lock()
-	fmt.Println("-- Total errorCount: ", store.errorCounter)
+	fmt.Println("Total errorCount: ", store.errorCounter)
+	fmt.Println("Common errorMessage: ", store.errorMessage)
+
+	var successPercent float32
+	successPercent = (float32(MAXGOROUTINES-store.errorCounter) / MAXGOROUTINES) * 100
+
+	fmt.Printf("success percentage : %.2f %%\n", successPercent)
+
 	store.Unlock()
 
 }
@@ -82,6 +95,7 @@ func insertValueInDB(i int, db *sql.DB, wg *sync.WaitGroup, cs *counterStore) {
 	if err != nil {
 		cs.Lock()
 		cs.errorCounter++
+		cs.errorMessage = err.Error()
 		fmt.Println("------ errorCounter : ", cs.errorCounter)
 		cs.Unlock()
 
