@@ -25,7 +25,7 @@ func main() {
 
 	simulateAppointments(patientRawData)
 
-	// printDataInTable(patientRawData)
+	printDataInTable(patientRawData)
 
 }
 
