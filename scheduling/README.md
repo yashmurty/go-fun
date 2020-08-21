@@ -5,6 +5,9 @@ In reality, patients may need to stay in the Positioning room until the Irradiat
 
 This solution tries to tackle that problem.
 
+The optimization part is still work in progress.
+Currently it creates the appointments with the same order as the CSV file/data input
+
 Desired Output:
 
 ![Monso-Algo](./Monso-Algo.png)
@@ -12,6 +15,7 @@ Desired Output:
 Result Output from our program:
 
 ```
+---- : --- | Pos Room  | Irr Room  |
 Time :   0 | Patient 1 | --------- |
 Time :   5 | --------- | Patient 1 |
 Time :  10 | --------- | Patient 1 |

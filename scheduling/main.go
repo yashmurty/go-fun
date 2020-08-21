@@ -134,6 +134,8 @@ func getPatientRawData() []PatientRawData {
 func printDataInTable(patientRawData []PatientRawData) {
 	fmt.Println("patientRawData : ", patientRawData)
 
+	fmt.Printf("---- : --- | Pos Room  | Irr Room  | \n")
+
 	for i := 0; i < 170; i = i + 5 {
 		fmt.Printf("Time : %3d | ", i)
 		patientExistsInPosRoom := false
