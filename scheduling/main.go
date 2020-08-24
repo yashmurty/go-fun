@@ -2,11 +2,17 @@ package main
 
 import "fmt"
 
+// PatientRawData represents the raw data received via CSV files.
 type PatientRawData struct {
+	patientID int
+	posTime   int
+	irrTime   int
+	totalTime int
+}
+
+// PatientAppointmentData stores the appointment schedule timing.
+type PatientAppointmentData struct {
 	patientID         int
-	posTime           int
-	irrTime           int
-	totalTime         int
 	posStartTime      int
 	posEndTime        int
 	irrStartTime      int
@@ -23,53 +29,63 @@ func main() {
 
 	fmt.Println("patientRawData : ", patientRawData)
 
-	simulateAppointments(patientRawData)
+	var permutations, permutationsCount = getElementPermutations(len(patientRawData))
 
-	printDataInTable(patientRawData)
+	fmt.Println("permutations : ", permutations)
+	fmt.Println("permutationsCount : ", permutationsCount)
+
+	patientAppointmentData := simulateAppointments(patientRawData)
+
+	printDataInTable(patientAppointmentData)
 
 }
 
-func simulateAppointments(patientRawData []PatientRawData) {
+func simulateAppointments(patientRawData []PatientRawData) []PatientAppointmentData {
 
 	availableTimePosRoom := 0
 	availableTimeIrrRoom := 0
 
-	for i := 0; i < len(patientRawData); i++ {
-		patientDataEach := &patientRawData[i]
+	patientAppointmentData := make([]PatientAppointmentData, len(patientRawData))
 
-		if availableTimeIrrRoom-patientDataEach.posTime >= availableTimePosRoom {
-			availableTimePosRoom = availableTimeIrrRoom - patientDataEach.posTime
+	for i := 0; i < len(patientRawData); i++ {
+		patientRawDataEach := patientRawData[i]
+		patientAppointmentDataEach := &patientAppointmentData[i]
+		patientAppointmentDataEach.patientID = patientRawDataEach.patientID
+
+		if availableTimeIrrRoom-patientRawDataEach.posTime >= availableTimePosRoom {
+			availableTimePosRoom = availableTimeIrrRoom - patientRawDataEach.posTime
 		}
 
-		patientDataEach.posStartTime = availableTimePosRoom
-		patientDataEach.posEndTime = patientDataEach.posStartTime + patientDataEach.posTime
+		patientAppointmentDataEach.posStartTime = availableTimePosRoom
+		patientAppointmentDataEach.posEndTime = patientAppointmentDataEach.posStartTime + patientRawDataEach.posTime
 
 		// NOTE: Calculate final Pos Room visit time for previous patient.
 		if i > 0 {
-			patientPrevious := &patientRawData[i-1]
-			patientPrevious.posFinalStartTime = patientDataEach.posEndTime
-			patientPrevious.posFinalEndTime = patientPrevious.posFinalStartTime + FinalVisitPosRoomTime
+			patientAppointmentDataPrevious := &patientAppointmentData[i-1]
+
+			patientAppointmentDataPrevious.posFinalStartTime = patientAppointmentDataPrevious.posEndTime
+			patientAppointmentDataPrevious.posFinalEndTime = patientAppointmentDataPrevious.posFinalStartTime + FinalVisitPosRoomTime
 		}
 
-		if availableTimeIrrRoom <= patientDataEach.posEndTime {
-			availableTimeIrrRoom = patientDataEach.posEndTime
+		if availableTimeIrrRoom <= patientAppointmentDataEach.posEndTime {
+			availableTimeIrrRoom = patientAppointmentDataEach.posEndTime
 		}
 
-		patientDataEach.irrStartTime = availableTimeIrrRoom
-		patientDataEach.irrEndTime = patientDataEach.irrStartTime + patientDataEach.irrTime
+		patientAppointmentDataEach.irrStartTime = availableTimeIrrRoom
+		patientAppointmentDataEach.irrEndTime = patientAppointmentDataEach.irrStartTime + patientRawDataEach.irrTime
 
-		// Note: Compensating here for final visit as well.
-		availableTimePosRoom = availableTimePosRoom + patientDataEach.posTime + FinalVisitPosRoomTime
-		availableTimeIrrRoom = availableTimeIrrRoom + patientDataEach.irrTime
+		// Note: Compensating here for final visit to the Pos room as well.
+		availableTimePosRoom = availableTimePosRoom + patientRawDataEach.posTime + FinalVisitPosRoomTime
+		availableTimeIrrRoom = availableTimeIrrRoom + patientRawDataEach.irrTime
 
-		fmt.Printf("patientDataEach : %+v\n", patientDataEach)
+		fmt.Printf("patientAppointmentDataEach : %+v\n", patientAppointmentDataEach)
 
-		// break
 	}
 
 	fmt.Println("availableTimePosRoom : ", availableTimePosRoom)
 	fmt.Println("availableTimeIrrRoom : ", availableTimeIrrRoom)
 
+	return patientAppointmentData
 }
 
 func getPatientRawData() []PatientRawData {
@@ -131,8 +147,17 @@ func getPatientRawData() []PatientRawData {
 	}
 }
 
-func printDataInTable(patientRawData []PatientRawData) {
-	fmt.Println("patientRawData : ", patientRawData)
+func getElementPermutations(count int) ([][]int, int) {
+	// WIP: Using manual permutations for now. Will update this later to be automatic.
+	permutation1 := []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
+	permutation2 := []int{1, 0, 2, 3, 4, 5, 6, 7, 8}
+
+	permutations := [][]int{permutation1, permutation2}
+	return permutations, 2
+}
+
+func printDataInTable(patientAppointmentData []PatientAppointmentData) {
+	fmt.Println("patientAppointmentData : ", patientAppointmentData)
 
 	fmt.Printf("---- : --- | Pos Room  | Irr Room  | \n")
 
@@ -141,9 +166,9 @@ func printDataInTable(patientRawData []PatientRawData) {
 		patientExistsInPosRoom := false
 		patientExistsInIrrRoom := false
 
-		for _, patientRawDataEach := range patientRawData {
-			if (patientRawDataEach.posStartTime <= i && patientRawDataEach.posEndTime > i) || (patientRawDataEach.posFinalStartTime <= i && patientRawDataEach.posFinalEndTime > i) {
-				fmt.Printf("Patient %1d | ", patientRawDataEach.patientID)
+		for _, patientAppointmentDataEach := range patientAppointmentData {
+			if (patientAppointmentDataEach.posStartTime <= i && patientAppointmentDataEach.posEndTime > i) || (patientAppointmentDataEach.posFinalStartTime <= i && patientAppointmentDataEach.posFinalEndTime > i) {
+				fmt.Printf("Patient %1d | ", patientAppointmentDataEach.patientID)
 				patientExistsInPosRoom = true
 
 				break
@@ -153,9 +178,9 @@ func printDataInTable(patientRawData []PatientRawData) {
 			fmt.Printf("--------- | ")
 		}
 
-		for _, patientRawDataEach := range patientRawData {
-			if patientRawDataEach.irrStartTime <= i && patientRawDataEach.irrEndTime > i {
-				fmt.Printf("Patient %1d |", patientRawDataEach.patientID)
+		for _, patientAppointmentDataEach := range patientAppointmentData {
+			if patientAppointmentDataEach.irrStartTime <= i && patientAppointmentDataEach.irrEndTime > i {
+				fmt.Printf("Patient %1d |", patientAppointmentDataEach.patientID)
 				patientExistsInIrrRoom = true
 
 				break
