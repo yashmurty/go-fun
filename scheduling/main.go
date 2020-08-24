@@ -48,6 +48,7 @@ func getOptimalAppointment(patientRawData []PatientRawData) ([]PatientAppointmen
 	fmt.Println("permutationsCount : ", len(permutations))
 
 	for i := 0; i < len(permutations); i++ {
+		fmt.Printf("\n--------- \n")
 		fmt.Println("permutation : ", permutations[i])
 		permutatedPatientRawData := getPermutatedPatientRawData(permutations[i], patientRawData)
 		fmt.Println("permutatedPatientRawData : ", permutatedPatientRawData)
@@ -116,7 +117,7 @@ func simulateAppointments(patientRawData []PatientRawData) ([]PatientAppointment
 			availableTimePosRoom = availableTimePosRoom + FinalVisitPosRoomTime
 		}
 
-		fmt.Printf("patientAppointmentDataEach : %+v\n", patientAppointmentDataEach)
+		// fmt.Printf("patientAppointmentDataEach : %+v\n", patientAppointmentDataEach)
 
 	}
 
