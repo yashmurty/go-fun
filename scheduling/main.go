@@ -29,18 +29,41 @@ func main() {
 
 	fmt.Println("patientRawData : ", patientRawData)
 
-	var permutations, permutationsCount = getElementPermutations(len(patientRawData))
+	_, availableTimePosRoom, availableTimeIrrRoom := getOptimalAppointment(patientRawData)
 
-	fmt.Println("permutations : ", permutations)
-	fmt.Println("permutationsCount : ", permutationsCount)
-
-	patientAppointmentData := simulateAppointments(patientRawData)
-
-	printDataInTable(patientAppointmentData)
+	fmt.Println("Optimum availableTimePosRoom : ", availableTimePosRoom)
+	fmt.Println("Optimum availableTimeIrrRoom : ", availableTimeIrrRoom)
 
 }
 
-func simulateAppointments(patientRawData []PatientRawData) []PatientAppointmentData {
+func getOptimalAppointment(patientRawData []PatientRawData) ([]PatientAppointmentData, int, int) {
+
+	optimalPatientAppointmentData := []PatientAppointmentData{}
+	optimalTimePosRoom := int(^uint(0) >> 1) // Max possible int
+	optimalTimeIrrRoom := int(^uint(0) >> 1) // Max possible int
+
+	var permutations = getElementPermutations(len(patientRawData))
+
+	fmt.Println("permutations : ", permutations)
+	fmt.Println("permutationsCount : ", len(permutations))
+
+	for i := 0; i < len(permutations); i++ {
+		fmt.Println("permutation : ", permutations[i])
+		permutatedPatientRawData := getPermutatedPatientRawData(permutations[i], patientRawData)
+		fmt.Println("permutatedPatientRawData : ", permutatedPatientRawData)
+
+		patientAppointmentData, availableTimePosRoom, availableTimeIrrRoom := simulateAppointments(permutatedPatientRawData)
+		if availableTimePosRoom < optimalTimePosRoom {
+			optimalPatientAppointmentData = patientAppointmentData
+			optimalTimePosRoom = availableTimePosRoom
+			optimalTimeIrrRoom = availableTimeIrrRoom
+		}
+	}
+
+	return optimalPatientAppointmentData, optimalTimePosRoom, optimalTimeIrrRoom
+}
+
+func simulateAppointments(patientRawData []PatientRawData) ([]PatientAppointmentData, int, int) {
 
 	availableTimePosRoom := 0
 	availableTimeIrrRoom := 0
@@ -100,7 +123,9 @@ func simulateAppointments(patientRawData []PatientRawData) []PatientAppointmentD
 	fmt.Println("availableTimePosRoom : ", availableTimePosRoom)
 	fmt.Println("availableTimeIrrRoom : ", availableTimeIrrRoom)
 
-	return patientAppointmentData
+	printDataInTable(patientAppointmentData)
+
+	return patientAppointmentData, availableTimePosRoom, availableTimeIrrRoom
 }
 
 func getPatientRawData() []PatientRawData {
@@ -162,13 +187,22 @@ func getPatientRawData() []PatientRawData {
 	}
 }
 
-func getElementPermutations(count int) ([][]int, int) {
+func getPermutatedPatientRawData(permutationOrder []int, patientRawData []PatientRawData) []PatientRawData {
+	permutatedPatientRawData := make([]PatientRawData, len(patientRawData))
+	for i := 0; i < len(permutationOrder); i++ {
+		permutatedPatientRawData[i] = patientRawData[permutationOrder[i]]
+	}
+
+	return permutatedPatientRawData
+}
+
+func getElementPermutations(count int) [][]int {
 	// WIP: Using manual permutations for now. Will update this later to be automatic.
 	permutation1 := []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
 	permutation2 := []int{1, 0, 2, 3, 4, 5, 6, 7, 8}
 
 	permutations := [][]int{permutation1, permutation2}
-	return permutations, 2
+	return permutations
 }
 
 func printDataInTable(patientAppointmentData []PatientAppointmentData) {
@@ -176,7 +210,7 @@ func printDataInTable(patientAppointmentData []PatientAppointmentData) {
 
 	fmt.Printf("---- : --- | Pos Room  | Irr Room  | \n")
 
-	for i := 0; i < 170; i = i + 5 {
+	for i := 0; i < 185; i = i + 5 {
 		fmt.Printf("Time : %3d | ", i)
 		patientExistsInPosRoom := false
 		patientExistsInIrrRoom := false
