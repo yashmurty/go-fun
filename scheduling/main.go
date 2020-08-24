@@ -65,6 +65,9 @@ func simulateAppointments(patientRawData []PatientRawData) []PatientAppointmentD
 
 			patientAppointmentDataPrevious.posFinalStartTime = patientAppointmentDataEach.posEndTime
 			patientAppointmentDataPrevious.posFinalEndTime = patientAppointmentDataPrevious.posFinalStartTime + FinalVisitPosRoomTime
+
+			// Compensating here for final visit to the Pos room as well.
+			availableTimePosRoom = availableTimePosRoom + FinalVisitPosRoomTime
 		}
 
 		if availableTimeIrrRoom <= patientAppointmentDataEach.posEndTime {
@@ -74,9 +77,21 @@ func simulateAppointments(patientRawData []PatientRawData) []PatientAppointmentD
 		patientAppointmentDataEach.irrStartTime = availableTimeIrrRoom
 		patientAppointmentDataEach.irrEndTime = patientAppointmentDataEach.irrStartTime + patientRawDataEach.irrTime
 
-		// Note: Compensating here for final visit to the Pos room as well.
-		availableTimePosRoom = availableTimePosRoom + patientRawDataEach.posTime + FinalVisitPosRoomTime
+		availableTimePosRoom = availableTimePosRoom + patientRawDataEach.posTime
 		availableTimeIrrRoom = availableTimeIrrRoom + patientRawDataEach.irrTime
+
+		// Calculate final Pos Room visit for the final patient.
+		if i == len(patientRawData)-1 {
+			if availableTimeIrrRoom >= availableTimePosRoom {
+				availableTimePosRoom = availableTimeIrrRoom
+			}
+
+			patientAppointmentDataEach.posFinalStartTime = availableTimePosRoom
+			patientAppointmentDataEach.posFinalEndTime = patientAppointmentDataEach.posFinalStartTime + FinalVisitPosRoomTime
+
+			// Compensating here for final visit to the Pos room as well.
+			availableTimePosRoom = availableTimePosRoom + FinalVisitPosRoomTime
+		}
 
 		fmt.Printf("patientAppointmentDataEach : %+v\n", patientAppointmentDataEach)
 
