@@ -31,6 +31,7 @@ func main() {
 
 	_, availableTimePosRoom, availableTimeIrrRoom := getOptimalAppointment(patientRawData)
 
+	fmt.Printf("\n--------- \n")
 	fmt.Println("Optimum availableTimePosRoom : ", availableTimePosRoom)
 	fmt.Println("Optimum availableTimeIrrRoom : ", availableTimeIrrRoom)
 
