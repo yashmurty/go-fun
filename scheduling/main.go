@@ -63,7 +63,7 @@ func simulateAppointments(patientRawData []PatientRawData) []PatientAppointmentD
 		if i > 0 {
 			patientAppointmentDataPrevious := &patientAppointmentData[i-1]
 
-			patientAppointmentDataPrevious.posFinalStartTime = patientAppointmentDataPrevious.posEndTime
+			patientAppointmentDataPrevious.posFinalStartTime = patientAppointmentDataEach.posEndTime
 			patientAppointmentDataPrevious.posFinalEndTime = patientAppointmentDataPrevious.posFinalStartTime + FinalVisitPosRoomTime
 		}
 
